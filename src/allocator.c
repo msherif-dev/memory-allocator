@@ -1,0 +1,190 @@
+#include <stdio.h>
+#include <stddef.h>
+
+#define HEAP_SIZE 1024
+
+
+static unsigned char heap[HEAP_SIZE];
+
+static size_t heap_used = 0;
+
+
+typedef struct block
+{
+    size_t size;
+
+    int free;
+
+} block_t;
+
+
+static block_t *find_free_block(size_t size)
+{
+    block_t *current = (block_t *)heap;
+
+    while ((unsigned char *)current < heap + heap_used)
+    {
+        if (current->free == 1 &&
+            current->size >= size)
+        {
+            return current;
+        }
+
+        current = (block_t *)(
+            (unsigned char *)current +
+            sizeof(block_t) +
+            current->size
+        );
+    }
+
+    return NULL;
+}
+
+
+static void split_block(block_t *block, size_t size)
+{
+    size_t remaining =
+        block->size - size;
+
+    if (remaining <= sizeof(block_t))
+    {
+        return;
+    }
+
+    block_t *new_block =
+        (block_t *)(
+            (unsigned char *)(block + 1) +
+            size
+        );
+
+    new_block->size =
+        remaining - sizeof(block_t);
+
+    new_block->free = 1;
+
+    block->size = size;
+}
+
+
+static void coalesce_blocks(void)
+{
+    block_t *current = (block_t *)heap;
+
+    while ((unsigned char *)current < heap + heap_used)
+    {
+        block_t *next =
+            (block_t *)(
+                (unsigned char *)current +
+                sizeof(block_t) +
+                current->size
+            );
+
+
+        if ((unsigned char *)next >= heap + heap_used)
+        {
+            break;
+        }
+
+
+        if (current->free == 1 &&
+            next->free == 1)
+        {
+
+            current->size +=
+                sizeof(block_t) +
+                next->size;
+
+
+            continue;
+        }
+
+        current = next;
+    }
+}
+
+
+
+void *my_malloc(size_t size)
+{
+
+
+    if (size == 0)
+    {
+        return NULL;
+    }
+
+
+    block_t *block =
+        find_free_block(size);
+
+
+
+
+    if (block != NULL)
+    {
+        split_block(block, size);
+
+        block->free = 0;
+
+        return (void *)(block + 1);
+    }
+
+
+    size_t total_size =
+        sizeof(block_t) + size;
+
+
+    if (heap_used + total_size > HEAP_SIZE)
+    {
+        return NULL;
+    }
+
+    block =
+        (block_t *)(heap + heap_used);
+
+
+    block->size = size;
+
+    block->free = 0;
+
+
+
+    heap_used += total_size;
+
+
+    return (void *)(block + 1);
+}
+
+
+void my_free(void *ptr)
+{
+    /*
+        free(NULL) آمنة
+    */
+
+    if (ptr == NULL)
+    {
+        return;
+    }
+
+
+    block_t *block =
+        (block_t *)ptr - 1;
+
+    block->free = 1;
+
+    coalesce_blocks();
+}
+
+
+void print_heap_status(void)
+{
+    printf("Heap Size      : %d Bytes\n",
+           HEAP_SIZE);
+
+    printf("Heap Used      : %zu Bytes\n",
+           heap_used);
+
+    printf("Heap Remaining : %zu Bytes\n",
+           HEAP_SIZE - heap_used);
+}
