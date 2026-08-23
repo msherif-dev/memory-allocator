@@ -7,39 +7,42 @@ void my_free(void *ptr);
 
 void print_heap_status(void);
 
-int main()
+
+int main(void)
 {
-    print_heap_status();
+    int *a = my_malloc(20);
 
-    printf("\n");
+    int *b = my_malloc(30);
 
-    int *a = my_malloc(sizeof(int));
+    int *c = my_malloc(40);
 
-    double *b = my_malloc(sizeof(double));
 
-    char *text = my_malloc(32);
+    printf("A = %p\n", (void *)a);
+    printf("B = %p\n", (void *)b);
+    printf("C = %p\n", (void *)c);
 
-    *a = 10;
 
-    *b = 3.14;
+    printf("\nFree A\n");
 
-    printf("%d\n", *a);
+    my_free(a);
 
-    printf("%.2f\n", *b);
+
+    printf("\nFree B\n");
 
     my_free(b);
 
-    printf("\n");
 
-    double *c = my_malloc(sizeof(double));
+    printf("\nAllocate 40 Bytes\n");
 
-    printf("Old Address : %p\n", (void *)b);
+    int *d = my_malloc(40);
 
-    printf("New Address : %p\n", (void *)c);
+    printf("D = %p\n", (void *)d);
 
-    printf("\n");
+
+    printf("\nHeap Status\n");
 
     print_heap_status();
+
 
     return 0;
 }

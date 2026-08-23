@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #define HEAP_SIZE 1024
+# define ALIGNMENT 8
 
 
 static unsigned char heap[HEAP_SIZE];
@@ -16,6 +17,15 @@ typedef struct block
     int free;
 
 } block_t;
+
+
+static size_t align_size(size_t size){
+
+    return(size + ALIGNMENT - 1) 
+            & ~ (ALIGNMENT - 1); 
+
+}
+
 
 
 static block_t *find_free_block(size_t size)
@@ -41,26 +51,41 @@ static block_t *find_free_block(size_t size)
 }
 
 
-static void split_block(block_t *block, size_t size)
+static void split_block(block_t *block,
+                        size_t size)
 {
+    if (block->size <= size)
+    {
+        return;
+    }
+
     size_t remaining =
         block->size - size;
 
-    if (remaining <= sizeof(block_t))
+
+    if (remaining <=
+        sizeof(block_t) + ALIGNMENT)
     {
         return;
     }
 
     block_t *new_block =
         (block_t *)(
-            (unsigned char *)(block + 1) +
-            size
+            (unsigned char *)(block + 1)
+            + size
         );
+
 
     new_block->size =
         remaining - sizeof(block_t);
 
+
+    new_block->size =
+        align_size(new_block->size);
+
+
     new_block->free = 1;
+
 
     block->size = size;
 }
@@ -112,6 +137,8 @@ void *my_malloc(size_t size)
     {
         return NULL;
     }
+
+    size = align_size(size);
 
 
     block_t *block =
