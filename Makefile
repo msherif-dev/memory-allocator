@@ -11,3 +11,5 @@ all:
 
 clean:
 	rm -f $(TARGET)
+
+CFLAGS = -Wall -Wextra -Werror -Iinclude
