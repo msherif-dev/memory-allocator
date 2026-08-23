@@ -26,6 +26,9 @@ static size_t align_size(size_t size){
 
 }
 
+static size_t metadata_size(void){
+    return align_size (sizeof(block_t));
+}
 
 
 static block_t *find_free_block(size_t size)
@@ -42,7 +45,7 @@ static block_t *find_free_block(size_t size)
 
         current = (block_t *)(
             (unsigned char *)current +
-            sizeof(block_t) +
+            metadata_size() +
             current->size
         );
     }
@@ -64,20 +67,15 @@ static void split_block(block_t *block,
 
 
     if (remaining <=
-        sizeof(block_t) + ALIGNMENT)
+        metadata_size() + ALIGNMENT)
     {
         return;
     }
 
-    block_t *new_block =
-        (block_t *)(
-            (unsigned char *)(block + 1)
-            + size
-        );
-
+    block_t *new_block = (block_t *)((unsigned char *)block + metadata_size() + size);
 
     new_block->size =
-        remaining - sizeof(block_t);
+        remaining - metadata_size();
 
 
     new_block->size =
@@ -100,7 +98,7 @@ static void coalesce_blocks(void)
         block_t *next =
             (block_t *)(
                 (unsigned char *)current +
-                sizeof(block_t) +
+                metadata_size()+
                 current->size
             );
 
@@ -116,7 +114,7 @@ static void coalesce_blocks(void)
         {
 
             current->size +=
-                sizeof(block_t) +
+                metadata_size()+
                 next->size;
 
 
@@ -158,7 +156,7 @@ void *my_malloc(size_t size)
 
 
     size_t total_size =
-        sizeof(block_t) + size;
+        metadata_size() + size;
 
 
     if (heap_used + total_size > HEAP_SIZE)
@@ -185,9 +183,7 @@ void *my_malloc(size_t size)
 
 void my_free(void *ptr)
 {
-    /*
-        free(NULL) آمنة
-    */
+
 
     if (ptr == NULL)
     {
@@ -195,9 +191,11 @@ void my_free(void *ptr)
     }
 
 
-    block_t *block =
-        (block_t *)ptr - 1;
+    block_t *block = 
+        (block_t *)((unsigned char *)ptr
+         - metadata_size());
 
+         
     block->free = 1;
 
     coalesce_blocks();
